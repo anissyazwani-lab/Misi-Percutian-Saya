@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bercuti di Pantai - Game Bahasa Melayu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@600;700;800&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 35%, #fef08a 70%, #fde047 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .font-fredoka {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* Animated Clouds */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 50px;
+            animation: moveClouds 25s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes moveClouds {
+            0% { transform: translateX(-150px); }
+            100% { transform: translateX(100vw); }
+        }
+
+        /* Wave Effect */
+        .wave-bg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%230284c7" fill-opacity="0.2" d="M0,192L48,197.3C96,203,192,213,288,208C384,203,480,181,576,181.3C672,181,768,203,864,208C960,213,1056,203,1152,186.7C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') repeat-x;
+            background-size: 1440px 100px;
+            animation: waveMove 10s ease-in-out infinite alternate;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes waveMove {
+            0% { background-position-x: 0; }
+            100% { background-position-x: 700px; }
+        }
+
+        .card-bounce {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .card-bounce:hover {
+            transform: translateY(-8px) scale(1.03);
+        }
+
+        .mic-pulse {
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .floating {
+            animation: float 3.5s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(3deg); }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-800 p-2 sm:p-4">
+
+    <!-- Background Decoration Elements -->
+    <div class="cloud w-32 h-10 top-6 left-[-100px]" style="animation-delay: 0s;"></div>
+    <div class="cloud w-48 h-12 top-16 left-[-150px]" style="animation-delay: 8s;"></div>
+    <div class="wave-bg"></div>
+
+    <header class="relative z-10 w-full max-w-4xl mx-auto bg-white/90 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-xl mb-4 flex flex-wrap justify-between items-center gap-3 border-4 border-amber-200">
+        <div class="flex items-center gap-3">
+            <div class="bg-amber-400 p-3 rounded-2xl text-white text-3xl shadow-inner floating">
+                🏖️
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold font-fredoka text-sky-800 leading-tight">Bercuti di Pantai</h1>
+                <p class="text-xs sm:text-sm text-amber-700 font-semibold">Kemahiran Mendengar & Bertutur</p>
+            </div>
+        </div>
+
+        <!-- Beach Ambient Sound Toggle & Scores -->
+        <div class="flex items-center gap-3">
+            <button id="btnBeachSound" onclick="toggleBeachAmbient()" class="bg-sky-100 hover:bg-sky-200 text-sky-700 p-2.5 rounded-xl border border-sky-300 text-sm font-bold flex items-center gap-2 transition" title="Pasang/Tutup bunyi ombak pantai">
+                <i id="beachSoundIcon" class="fa-solid fa-volume-xmark text-lg"></i>
+                <span class="hidden sm:inline">Bunyi Pantai</span>
+            </button>
+
+            <div class="flex items-center gap-3 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200">
+                <div class="flex items-center gap-1 text-amber-500 font-bold text-base sm:text-lg">
+                    <i class="fa-solid fa-star text-amber-400 text-xl drop-shadow"></i>
+                    <span id="starCount">0</span>
+                </div>
+                <div class="h-5 w-px bg-amber-200"></div>
+                <div class="text-slate-700 font-bold text-sm sm:text-base">
+                    Skor: <span id="scoreCount" class="text-sky-600">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative z-10 w-full max-w-4xl mx-auto flex-1 flex flex-col justify-center">
+
+        <!-- SCREEN: Main Menu -->
+        <div id="screenMainMenu" class="bg-white/95 backdrop-blur rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-amber-300 text-center">
+            <div class="max-w-md mx-auto">
+                <div class="text-7xl mb-3 floating">🏝️🐚🦀</div>
+                <h2 class="text-2xl sm:text-3xl font-bold font-fredoka text-sky-900 mb-2">Jom Bercuti di Pantai!</h2>
+                <p class="text-slate-600 mb-6 text-sm sm:text-base font-semibold">Pilih aktiviti di bawah untuk menguji kemahiran mendengar dan bertutur Bahasa Melayu anda.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Button Mode 1 -->
+                    <button onclick="startGame(1)" class="card-bounce bg-gradient-to-br from-sky-400 to-blue-600 hover:from-sky-500 hover:to-blue-700 text-white rounded-2xl p-5 text-left shadow-lg border-2 border-sky-200 flex flex-col justify-between group">
+                        <div>
+                            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition">
+                                🎧
+                            </div>
+                            <h3 class="font-fredoka text-xl font-bold mb-1">Mod 1: Mendengar</h3>
+                            <p class="text-xs text-sky-100 font-medium">Dengar petunjuk aktiviti pantai & pilih gambar yang betul.</p>
+                        </div>
+                        <span class="mt-4 text-xs bg-white/20 px-3 py-1 rounded-full w-max font-bold">6 Soalan</span>
+                    </button>
+
+                    <!-- Button Mode 2 -->
+                    <button onclick="startGame(2)" class="card-bounce bg-gradient-to-br from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white rounded-2xl p-5 text-left shadow-lg border-2 border-amber-200 flex flex-col justify-between group">
+                        <div>
+                            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition">
+                                🎙️
+                            </div>
+                            <h3 class="font-fredoka text-xl font-bold mb-1">Mod 2: Bertutur</h3>
+                            <p class="text-xs text-amber-100 font-medium">Cakap & jawab soalan tentang pantai menggunakan mikrofon.</p>
+                        </div>
+                        <span class="mt-4 text-xs bg-white/20 px-3 py-1 rounded-full w-max font-bold">5 Soalan</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="screenListening" class="hidden bg-white/95 backdrop-blur rounded-3xl p-4 sm:p-6 shadow-2xl border-4 border-sky-300">
+            <!-- Progress Bar -->
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="returnToMenu()" class="text-slate-600 hover:text-slate-900 font-bold text-sm flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 transition">
+                    <i class="fa-solid fa-arrow-left"></i> Menu Utama
+                </button>
+                <div class="text-sm font-bold text-sky-700 bg-sky-100 px-3 py-1 rounded-full border border-sky-300">
+                    Soalan <span id="listenQuestionNum">1</span> / 6
+                </div>
+            </div>
+
+            <!-- Audio Cue Card -->
+            <div class="bg-gradient-to-r from-sky-100 via-blue-50 to-amber-50 border-2 border-sky-300 rounded-2xl p-5 text-center mb-6 relative shadow-inner">
+                <span class="text-xs font-bold uppercase tracking-wider text-sky-700 block mb-1">👂 Dengar & Pilih Gambar</span>
+                <p class="text-sm sm:text-base font-bold text-slate-700 mb-3">Tekan butang di bawah untuk mendengar aktiviti di pantai:</p>
+                
+                <button id="btnPlayAudio" onclick="playQuestionAudio()" class="card-bounce bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-full shadow-lg shadow-sky-300 flex items-center justify-center gap-3 mx-auto text-lg border-2 border-sky-200">
+                    <i class="fa-solid fa-volume-high text-xl"></i>
+                    <span>Dengar Petunjuk Audio</span>
+                </button>
+            </div>
+
+            <!-- Choice Options Grid -->
+            <div id="listenOptionsGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
+                <!-- Dynamic Content via JS -->
+            </div>
+        </div>
+
+        <div id="screenSpeaking" class="hidden bg-white/95 backdrop-blur rounded-3xl p-4 sm:p-6 shadow-2xl border-4 border-amber-300">
+            <!-- Progress Bar -->
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="returnToMenu()" class="text-slate-600 hover:text-slate-900 font-bold text-sm flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 transition">
+                    <i class="fa-solid fa-arrow-left"></i> Menu Utama
+                </button>
+                <div class="text-sm font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+                    Soalan <span id="speakQuestionNum">1</span> / 5
+                </div>
+            </div>
+
+            <!-- Target Speech Box -->
+            <div class="bg-gradient-to-r from-amber-50 via-orange-50 to-sky-50 border-2 border-amber-300 rounded-2xl p-5 text-center mb-4 shadow-inner">
+                <span id="speakBadgeType" class="text-xs font-bold uppercase tracking-wider text-amber-700 block mb-1">🗣️ Kemahiran Bertutur</span>
+                <div id="speakVisualEmoji" class="text-6xl mb-2 floating">🏰</div>
+                
+                <h3 id="speakPromptTitle" class="text-sm sm:text-base font-bold text-slate-700 mb-2">Sebutkan ayat pantai di bawah dengan jelas:</h3>
+                
+                <div class="bg-white p-4 rounded-xl border-2 border-amber-200 shadow-sm max-w-lg mx-auto mb-2">
+                    <p id="speakTargetText" class="text-lg sm:text-2xl font-fredoka text-amber-900 font-bold leading-relaxed">"Saya suka bermain istana pasir di pantai."</p>
+                </div>
+                
+                <button onclick="speakTargetPhrase()" class="text-sky-600 hover:text-sky-800 text-xs sm:text-sm font-bold inline-flex items-center gap-1.5 py-1 px-3 bg-sky-50 rounded-lg border border-sky-200">
+                    <i class="fa-solid fa-volume-high"></i> Dengar Sebutan Contoh
+                </button>
+            </div>
+
+            <!-- Speech Recording Area -->
+            <div class="text-center mb-2">
+                <button id="btnStartRec" onclick="toggleSpeechRecognition()" class="w-20 h-20 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center text-3xl mx-auto shadow-xl transition-all relative border-4 border-rose-200">
+                    <i id="micIcon" class="fa-solid fa-microphone"></i>
+                </button>
+                <p id="micStatusText" class="text-sm font-bold text-slate-700 mt-2">Tekan mikrofon & bercakap</p>
+                
+                <!-- Speech recognition fallback button for device compatibility -->
+                <button onclick="simulateSpeechResult()" class="mt-2 text-xs font-bold text-amber-700 hover:text-amber-900 underline block mx-auto">
+                    (Tekan Sini Jika Tiada Mikrofon / Menggunakan Simulasi)
+                </button>
+
+                <div id="recognizedResult" class="mt-3 min-h-[32px] text-sm italic font-semibold text-sky-800 bg-sky-50 px-4 py-2 rounded-xl max-w-md mx-auto hidden border border-sky-300">
+                    Pengesanan Suara: "<span id="speechTextOutput">...</span>"
+                </div>
+            </div>
+        </div>
+
+        <div id="screenResult" class="hidden bg-white/95 backdrop-blur rounded-3xl p-6 sm:p-8 shadow-2xl border-4 border-amber-300 text-center">
+            <div class="text-7xl mb-3 floating">🏝️🎉⭐</div>
+            <h2 class="text-3xl font-bold font-fredoka text-sky-900 mb-2">Tahniah! Percutian Hebat!</h2>
+            <p class="text-slate-600 mb-6 font-semibold">Anda telah berjaya menyelesaikan aktiviti kemahiran Bahasa Melayu bertema pantai!</p>
+
+            <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-6 max-w-sm mx-auto mb-6 shadow-md">
+                <div class="text-amber-400 text-4xl mb-2 flex justify-center gap-2 drop-shadow" id="resultStars">
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <p class="text-slate-700 font-bold text-lg mt-2">Jumlah Skor: <span id="finalScore" class="text-sky-600 text-3xl font-black">0</span></p>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-4">
+                <button onclick="returnToMenu()" class="card-bounce bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-2xl shadow-lg border-2 border-sky-300 flex items-center gap-2">
+                    <i class="fa-solid fa-house"></i> Menu Utama
+                </button>
+                <button id="btnRestartGame" onclick="restartCurrentMode()" class="card-bounce bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-2xl shadow-lg border-2 border-amber-300 flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Main Lagi
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Feedback -->
+    <div id="feedbackToast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl font-bold text-white text-center transition-all duration-300 opacity-0 pointer-events-none translate-y-4 z-50 flex items-center gap-3">
+        <span id="toastIcon" class="text-2xl"></span>
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        let currentMode = 1; // 1: Listening, 2: Speaking
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let stars = 0;
+        let isRecognizing = false;
+        let recognition = null;
+        let audioCtx = null;
+        let isBeachSoundPlaying = false;
+        let beachAudioSource = null;
+
+        // MODE 1 DATA: Listening (Strictly Beach Theme)
+        const listeningData = [
+            {
+                id: 1,
+                audioText: "Kami membina istana pasir yang besar bersama adik di tepi pantai.",
+                options: [
+                    { emoji: "🏰🏖️", label: "Membina istana pasir", correct: true },
+                    { emoji: "🛥️🌊", label: "Naik bot laju", correct: false },
+                    { emoji: "🍉🧺", label: "Makan tembikai berkelah", correct: false }
+                ]
+            },
+            {
+                id: 2,
+                audioText: "Ayah dan abang berenang di laut menggunakan pelampung berwarna-warni.",
+                options: [
+                    { emoji: "🤿🏊‍♂️", label: "Berenang dengan pelampung", correct: true },
+                    { emoji: "🐚🏝️", label: "Mengumpul cengkerang", correct: false },
+                    { emoji: "🪁💨", label: "Bermain layang-layang", correct: false }
+                ]
+            },
+            {
+                id: 3,
+                audioText: "Ibu dan kakak berkelah sambil makan tembikai segar di bawah payung pantai.",
+                options: [
+                    { emoji: "🏰🏖️", label: "Membina istana pasir", correct: false },
+                    { emoji: "🍉☂️", label: "Berkelah makan tembikai", correct: true },
+                    { emoji: "🛥️️🌊", label: "Naik bot laju", correct: false }
+                ]
+            },
+            {
+                id: 4,
+                audioText: "Kami mengumpul cengkerang pelbagai bentuk dan warna di tepi pantai.",
+                options: [
+                    { emoji: "🤿🏊‍♂️", label: "Berenang di laut", correct: false },
+                    { emoji: "🪁💨", label: "Bermain layang-layang", correct: false },
+                    { emoji: "🐚🏝️", label: "Mengumpul cengkerang", correct: true }
+                ]
+            },
+            {
+                id: 5,
+                audioText: "Adik bermain layang-layang yang terbang tinggi ditiup angin pantai.",
+                options: [
+                    { emoji: "🪁💨", label: "Bermain layang-layang", correct: true },
+                    { emoji: "🍉🧺", label: "Makan tembikai berkelah", correct: false },
+                    { emoji: "🏰🏖️", label: "Membina istana pasir", correct: false }
+                ]
+            },
+            {
+                id: 6,
+                audioText: "Kami naik bot laju dan memakai jaket keselamatan dengan selamat.",
+                options: [
+                    { emoji: "🐚🏝️", label: "Mengumpul cengkerang", correct: false },
+                    { emoji: "🛥️🤿", label: "Naik bot laju & jaket keselamatan", correct: true },
+                    { emoji: "🤿🏊‍♂️", label: "Berenang dengan pelampung", correct: false }
+                ]
+            }
+        ];
+
+        // MODE 2 DATA: Speaking (Strictly Beach Theme Phrases & Q&A)
+        const speakingData = [
+            {
+                id: 1,
+                emoji: "🏰🏖️️",
+                title: "Sebutkan ayat aktiviti pantai:",
+                targetPhrase: "Saya suka bermain istana pasir di pantai.",
+                keywords: ["suka", "bermain", "istana", "pasir", "pantai"],
+                isQuestion: false
+            },
+            {
+                id: 2,
+                emoji: "🍉🧺",
+                title: "Jawab soalan bertutur di bawah:",
+                prompt: "Apakah yang kamu bawa semasa berkelah di pantai?",
+                targetPhrase: "Saya membawa makanan dan tembikai segar.",
+                keywords: ["makanan", "tembikai", "segar", "bawa"],
+                isQuestion: true
+            },
+            {
+                id: 3,
+                emoji: "🤿🌊",
+                title: "Sebutkan ayat percutian laut:",
+                targetPhrase: "Ayah memakai pelampung semasa berenang di laut.",
+                keywords: ["ayah", "pelampung", "berenang", "laut"],
+                isQuestion: false
+            },
+            {
+                id: 4,
+                emoji: "🐚🏝️",
+                title: "Sebutkan ayat hobi di pantai:",
+                targetPhrase: "Kami mengumpul cengkerang cantik di tepi pantai.",
+                keywords: ["mengumpul", "cengkerang", "cantik", "pantai"],
+                isQuestion: false
+            },
+            {
+                id: 5,
+                emoji: "🛥️✨",
+                title: "Jawab soalan bertutur di bawah:",
+                prompt: "Mengapakah kita perlu memakai jaket keselamatan di atas bot?",
+                targetPhrase: "Untuk menjaga keselamatan diri di laut.",
+                keywords: ["menjaga", "keselamatan", "diri", "laut", "selamat"],
+                isQuestion: true
+            }
+        ];
+
+        // Sound Synthesis Effects (Web Audio API)
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSoundEffect(type) {
+            initAudioContext();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'success') {
+                // Happy Arpeggio Tone
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                    gain.gain.setValueAtTime(0.2, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.25);
+                });
+            } else if (type === 'error') {
+                // Low Buzz Tone
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        // Ocean Wave Ambient Sound Generation
+        function toggleBeachAmbient() {
+            initAudioContext();
+            const btnIcon = document.getElementById('beachSoundIcon');
+
+            if (isBeachSoundPlaying) {
+                if (beachAudioSource) {
+                    beachAudioSource.stop();
+                    beachAudioSource = null;
+                }
+                isBeachSoundPlaying = false;
+                btnIcon.className = "fa-solid fa-volume-xmark text-lg";
+            } else {
+                // Generate ocean wave noise using AudioBuffer
+                const bufferSize = audioCtx.sampleRate * 3;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1; // Pink-ish noise
+                }
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                noise.loop = true;
+
+                // Lowpass filter for smooth ocean sound
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(300, audioCtx.currentTime);
+
+                // Gain LFO for swelling waves
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+
+                noise.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                noise.start();
+                beachAudioSource = noise;
+                isBeachSoundPlaying = true;
+                btnIcon.className = "fa-solid fa-volume-high text-lg text-sky-600";
+            }
+        }
+
+        // Web Speech Recognition Initialisation
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        function initSpeechRecognition() {
+            if (!SpeechRecognition) {
+                console.warn("Speech Recognition API tidak disokong pada pelayar ini.");
+                return;
+            }
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ms-MY';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                isRecognizing = true;
+                updateMicUI(true);
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('speechTextOutput').textContent = transcript;
+                document.getElementById('recognizedResult').classList.remove('hidden');
+                checkSpokenPhrase(transcript);
+            };
+
+            recognition.onerror = function(event) {
+                showToast("Suara kurang jelas. Sila cuba lagi!", "error");
+                stopMic();
+            };
+
+            recognition.onend = function() {
+                stopMic();
+            };
+        }
+
+        function speakMalayText(text, callback) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ms-MY';
+                utterance.rate = 0.85; // Natural speed for children
+                utterance.pitch = 1.0;
+
+                const voices = window.speechSynthesis.getVoices();
+                const malayVoice = voices.find(v => v.lang.includes('ms') || v.lang.includes('id'));
+                if (malayVoice) utterance.voice = malayVoice;
+
+                if (callback) utterance.onend = callback;
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                showToast("Fungsi Audio SpeechSynthesis tidak disokong.", "error");
+            }
+        }
+
+        function startGame(mode) {
+            initAudioContext();
+            currentMode = mode;
+            currentQuestionIndex = 0;
+            score = 0;
+            stars = 0;
+            updateHeaderStats();
+
+            document.getElementById('screenMainMenu').classList.add('hidden');
+            document.getElementById('screenResult').classList.add('hidden');
+
+            if (mode === 1) {
+                document.getElementById('screenListening').classList.remove('hidden');
+                loadListeningQuestion();
+            } else {
+                document.getElementById('screenSpeaking').classList.remove('hidden');
+                loadSpeakingQuestion();
+            }
+        }
+
+        function returnToMenu() {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            if (isRecognizing && recognition) recognition.stop();
+
+            document.getElementById('screenListening').classList.add('hidden');
+            document.getElementById('screenSpeaking').classList.add('hidden');
+            document.getElementById('screenResult').classList.add('hidden');
+            document.getElementById('screenMainMenu').classList.remove('hidden');
+        }
+
+        function restartCurrentMode() {
+            startGame(currentMode);
+        }
+
+        // Load Listening Question
+        function loadListeningQuestion() {
+            const data = listeningData[currentQuestionIndex];
+            document.getElementById('listenQuestionNum').textContent = currentQuestionIndex + 1;
+
+            const grid = document.getElementById('listenOptionsGrid');
+            grid.innerHTML = '';
+
+            const shuffledOptions = [...data.options].sort(() => Math.random() - 0.5);
+
+            shuffledOptions.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = "card-bounce bg-white border-2 border-slate-200 hover:border-sky-400 rounded-2xl p-5 text-center shadow-md flex flex-col items-center justify-center gap-3 group";
+                btn.onclick = () => checkListeningAnswer(opt.correct, btn);
+
+                btn.innerHTML = `
+                    <span class="text-6xl group-hover:scale-110 transition drop-shadow">${opt.emoji}</span>
+                    <span class="font-bold text-slate-700 group-hover:text-sky-700 text-sm sm:text-base">${opt.label}</span>
+                `;
+                grid.appendChild(btn);
+            });
+
+            setTimeout(() => {
+                playQuestionAudio();
+            }, 400);
+        }
+
+        function playQuestionAudio() {
+            const currentText = listeningData[currentQuestionIndex].audioText;
+            const btn = document.getElementById('btnPlayAudio');
+            btn.classList.add('animate-pulse');
+
+            speakMalayText(currentText, () => {
+                btn.classList.remove('animate-pulse');
+            });
+        }
+
+        function checkListeningAnswer(isCorrect, element) {
+            if (isCorrect) {
+                element.classList.add('bg-emerald-100', 'border-emerald-500');
+                score += 20;
+                stars += 1;
+                updateHeaderStats();
+                playSoundEffect('success');
+                showToast("Tepat Sekali! Syabas!", "success");
+                speakMalayText("Tepat Sekali! Syabas!");
+
+                setTimeout(() => {
+                    nextQuestion();
+                }, 1600);
+            } else {
+                element.classList.add('bg-rose-100', 'border-rose-400');
+                playSoundEffect('error');
+                showToast("Sila Cuba Lagi!", "error");
+                speakMalayText("Cuba lagi!");
+            }
+        }
+
+        // Load Speaking Question
+        function loadSpeakingQuestion() {
+            const data = speakingData[currentQuestionIndex];
+            document.getElementById('speakQuestionNum').textContent = currentQuestionIndex + 1;
+            document.getElementById('speakVisualEmoji').textContent = data.emoji;
+            document.getElementById('speakPromptTitle').textContent = data.title;
+
+            if (data.isQuestion) {
+                document.getElementById('speakBadgeType').textContent = "❓ Soalan Bertutur";
+                document.getElementById('speakTargetText').innerHTML = `
+                    <span class="block text-sm text-sky-800 mb-1 font-semibold">Soalan: ${data.prompt}</span>
+                    <span class="text-amber-900">Cadangan Jawapan: "${data.targetPhrase}"</span>
+                `;
+            } else {
+                document.getElementById('speakBadgeType').textContent = "🗣️ Sebutan Ayat Pantai";
+                document.getElementById('speakTargetText').textContent = `"${data.targetPhrase}"`;
+            }
+
+            document.getElementById('recognizedResult').classList.add('hidden');
+            document.getElementById('speechTextOutput').textContent = '...';
+        }
+
+        function speakTargetPhrase() {
+            const data = speakingData[currentQuestionIndex];
+            const textToSpeak = data.isQuestion ? `${data.prompt} Jawapan: ${data.targetPhrase}` : data.targetPhrase;
+            speakMalayText(textToSpeak);
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognition) {
+                showToast("Simulasi Sebutan Digunakan (Mic tidak disokong)", "error");
+                simulateSpeechResult();
+                return;
+            }
+
+            if (isRecognizing) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+        }
+
+        function updateMicUI(listening) {
+            const micBtn = document.getElementById('btnStartRec');
+            const micStatus = document.getElementById('micStatusText');
+
+            if (listening) {
+                micBtn.classList.add('bg-rose-600', 'mic-pulse');
+                micStatus.textContent = "Mendengar... Sila bercakap sekarang!";
+                micStatus.classList.add('text-rose-600');
+            } else {
+                micBtn.classList.remove('bg-rose-600', 'mic-pulse');
+                micStatus.textContent = "Tekan mikrofon & bercakap";
+                micStatus.classList.remove('text-rose-600');
+            }
+        }
+
+        function stopMic() {
+            isRecognizing = false;
+            updateMicUI(false);
+        }
+
+        function checkSpokenPhrase(spokenText) {
+            const targetData = speakingData[currentQuestionIndex];
+            const cleanSpoken = spokenText.toLowerCase().trim();
+
+            let matchCount = 0;
+            targetData.keywords.forEach(keyword => {
+                if (cleanSpoken.includes(keyword.toLowerCase())) {
+                    matchCount++;
+                }
+            });
+
+            if (matchCount >= Math.ceil(targetData.keywords.length / 2)) {
+                score += 20;
+                stars += 1;
+                updateHeaderStats();
+                playSoundEffect('success');
+                showToast("Sebutan Jelas & Bagus!", "success");
+                speakMalayText("Bagus! Sebutan anda sangat jelas.");
+
+                setTimeout(() => {
+                    nextQuestion();
+                }, 1800);
+            } else {
+                playSoundEffect('error');
+                showToast("Kurang Jelas. Cuba sebut semula!", "error");
+                speakMalayText("Cuba sebut semula dengan jelas.");
+            }
+        }
+
+        // Fallback simulation for devices without mic
+        function simulateSpeechResult() {
+            const targetPhrase = speakingData[currentQuestionIndex].targetPhrase;
+            document.getElementById('speechTextOutput').textContent = targetPhrase;
+            document.getElementById('recognizedResult').classList.remove('hidden');
+            checkSpokenPhrase(targetPhrase);
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            const maxQuestions = currentMode === 1 ? listeningData.length : speakingData.length;
+
+            if (currentQuestionIndex < maxQuestions) {
+                if (currentMode === 1) {
+                    loadListeningQuestion();
+                } else {
+                    loadSpeakingQuestion();
+                }
+            } else {
+                showResultsScreen();
+            }
+        }
+
+        function showResultsScreen() {
+            document.getElementById('screenListening').classList.add('hidden');
+            document.getElementById('screenSpeaking').classList.add('hidden');
+            document.getElementById('screenResult').classList.remove('hidden');
+
+            document.getElementById('finalScore').textContent = score;
+
+            const starsContainer = document.getElementById('resultStars');
+            starsContainer.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                if (i < stars) {
+                    starsContainer.innerHTML += `<i class="fa-solid fa-star text-amber-400"></i>`;
+                } else {
+                    starsContainer.innerHTML += `<i class="fa-regular fa-star text-amber-200"></i>`;
+                }
+            }
+
+            playSoundEffect('success');
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            speakMalayText("Tahniah! Anda telah berjaya menyelesaikan aktiviti percutian di pantai.");
+        }
+
+        function updateHeaderStats() {
+            document.getElementById('scoreCount').textContent = score;
+            document.getElementById('starCount').textContent = stars;
+        }
+
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('feedbackToast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            msg.textContent = message;
+
+            if (type === "success") {
+                toast.className = "fixed bottom-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl font-bold text-white text-center transition-all duration-300 opacity-100 translate-y-0 z-50 flex items-center gap-3 bg-emerald-500 border-2 border-emerald-300";
+                icon.textContent = "⭐";
+            } else {
+                toast.className = "fixed bottom-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-2xl shadow-2xl font-bold text-white text-center transition-all duration-300 opacity-100 translate-y-0 z-50 flex items-center gap-3 bg-rose-500 border-2 border-rose-300";
+                icon.textContent = "💡";
+            }
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 2500);
+        }
+
+        window.onload = function() {
+            initSpeechRecognition();
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.onvoiceschanged = () => {
+                    window.speechSynthesis.getVoices();
+                };
+            }
+        };
+    </script>
+</body>
+</html>
